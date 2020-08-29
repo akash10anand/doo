@@ -6,12 +6,14 @@ import { NavigationContainer } from '@react-navigation/native';
 
 const App = () => {
   return (
-    <NavigationContainer>
+    // <NavigationContainer>
+    <>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={styles.container}>
         <Home />
       </SafeAreaView>
-    </NavigationContainer>
+    </>
+    // </NavigationContainer>
   );
 };
 

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -7,95 +8,69 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Timers from '../components/Timers';
 import AddTimer from '../components/AddTimer';
 import Settings from '../components/Settings';
-import { saveData } from '../utils/DbHelper';
+import { saveData, getData } from '../utils/DbHelper';
 
 const Tab = createBottomTabNavigator();
 
 const generateId = () => Date.now().toString();
 
-const DATA = [
-  {
-    title: 'Boil eggs',
-    hours: '10',
-    minutes: '00',
-    reusableTimer: true,
-    singleUseTimer: false,
-    id: generateId(),
-  },
-  {
-    title: 'tea',
-    hours: '10',
-    minutes: '00',
-    reusableTimer: true,
-    singleUseTimer: false,
-    id: generateId(),
-  },
-  {
-    title: 'khichdi',
-    hours: '10',
-    minutes: '00',
-    reusableTimer: true,
-    singleUseTimer: false,
-    id: generateId(),
-  },
-];
-
-const DATA2 = {
-  1: {
-    title: 'Boil eggs',
-    hours: '10',
-    minutes: '00',
-    reusableTimer: true,
-    singleUseTimer: false,
-  },
-  2: {
-    title: 'tea',
-    hours: '10',
-    minutes: '00',
-    reusableTimer: true,
-    singleUseTimer: false,
-  },
-  3: {
-    title: 'khichdi',
-    hours: '10',
-    minutes: '00',
-    reusableTimer: true,
-    singleUseTimer: false,
-  },
-};
-
 const Home = () => {
-  const [data, setData] = useState(DATA);
+  const [data, setData] = useState({});
+  const [editData, setEditData] = useState({});
+
+  useEffect(() => {
+    getData().then((result) => setData(result || {}));
+  }, []);
 
   const saveTimerData = (
     title,
     hours,
     minutes,
+    seconds,
     reusableTimer,
     singleUseTimer,
+    editData,
   ) => {
-    console.log(title, hours, minutes, reusableTimer, singleUseTimer);
-    setData([
-      ...data,
-      { title, hours, minutes, reusableTimer, singleUseTimer },
-    ]);
+    let newTimer = {};
+    if (editData.toEdit) {
+      newTimer[editData.id] = {
+        title: title,
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds,
+        reusableTimer: reusableTimer,
+        singleUseTimer: singleUseTimer,
+        editCounter: data[editData.id].editCounter + 1,
+      };
+      setEditData(editData);
+    } else {
+      newTimer[generateId()] = {
+        title: title,
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds,
+        reusableTimer: reusableTimer,
+        singleUseTimer: singleUseTimer,
+        editCounter: 1,
+      };
+    }
+    setData({ ...data, ...newTimer });
   };
+
+  useEffect(() => {
+    if (data !== {}) {
+      saveData(data);
+    }
+  }, [data]);
 
   const deleteTimer = (timerId) => {
-    let index = data.findIndex((obj) => obj.id === timerId);
-    if (index > -1) {
-      data.splice(index, 1);
-    }
-    setData([...data]);
-    saveData(data);
-  };
-
-  const saveTimers = () => {
-    saveData(data);
+    delete data[timerId];
+    setData({ ...data });
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    // <View style={{ flex: 1 }}>
+    <NavigationContainer>
       <Tab.Navigator
         tabBarOptions={{
           activeTintColor: '#4b5d67',
@@ -107,7 +82,14 @@ const Home = () => {
               <MaterialCommunityIcons name="timer" color="#4b5d67" size={20} />
             ),
           }}>
-          {() => <Timers data={data} deleteTimer={deleteTimer} />}
+          {(props) => (
+            <Timers
+              {...props}
+              data={data}
+              deleteTimer={deleteTimer}
+              editData={editData}
+            />
+          )}
         </Tab.Screen>
         <Tab.Screen
           name="AddTimers"
@@ -120,9 +102,7 @@ const Home = () => {
               />
             ),
           }}>
-          {() => (
-            <AddTimer saveTimerData={saveTimerData} saveTimers={saveTimers} />
-          )}
+          {(props) => <AddTimer {...props} saveTimerData={saveTimerData} />}
         </Tab.Screen>
         <Tab.Screen
           name="Settings"
@@ -134,7 +114,8 @@ const Home = () => {
           }}
         />
       </Tab.Navigator>
-    </View>
+    </NavigationContainer>
+    // </View>
   );
 };
 

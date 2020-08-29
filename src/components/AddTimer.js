@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+/* eslint-disable react/self-closing-comp */
+/* eslint-disable react-native/no-inline-styles */
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigation } from '@react-navigation/native';
 
 import {
   View,
@@ -11,14 +12,59 @@ import {
 } from 'react-native';
 import TimePicker from 'react-native-simple-time-picker';
 
-const AddTimer = (props) => {
+const AddTimer = ({ navigation, saveTimerData, route }) => {
   const [title, setTitle] = useState('');
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
-  const [saveTimer, setSaveTimer] = useState(true);
+  const [seconds, setSeconds] = useState(1);
+  const [reusableTimer, setReusableTimer] = useState(true);
   const [singleUseTimer, setSingleUseTimer] = useState(false);
+  const [editData, setEditData] = useState({ toEdit: false, id: null });
 
-  const navigation = useNavigation();
+  const editTimer = (timerDetails) => {
+    setTitle(timerDetails.title);
+    setHours(timerDetails.hours);
+    setMinutes(timerDetails.minutes);
+    setSeconds(timerDetails.seconds);
+    setReusableTimer(timerDetails.reusableTimer);
+    setSingleUseTimer(timerDetails.singleUseTimer);
+  };
+  const resetTimer = () => {
+    setTitle('');
+    setHours('');
+    setMinutes('');
+    setSeconds('');
+    setReusableTimer(true);
+    setSingleUseTimer(false);
+    setEditData({ toEdit: false, id: null });
+  };
+
+  useEffect(() => {
+    if (route.params !== undefined) {
+      const { edit, timerDetails, id } = route.params;
+      if (edit) {
+        setEditData({
+          toEdit: true,
+          id: id,
+        });
+        editTimer(timerDetails);
+      }else{
+        resetTimer();
+      }
+    }
+  }, [route.params]);
+
+  // useEffect(() => {
+  //   if (!editData.toEdit) {
+  //     setTitle('');
+  //     setHours(0);
+  //     setMinutes(0);
+  //     setSeconds(0);
+  //     setReusableTimer(true);
+  //     setSingleUseTimer(false);
+  //     setEditData({ toEdit: false, id: null });
+  //   }
+  // }, []);
 
   return (
     <View style={{ flex: 1, marginHorizontal: 16 }}>
@@ -43,16 +89,28 @@ const AddTimer = (props) => {
       </View>
       <View style={{ marginTop: 16 }}>
         <Text style={{ fontWeight: '600', fontSize: 16 }}>Timers</Text>
-        <TimePicker
-          selectedHours={hours}
-          //initial Hourse value
-          selectedMinutes={minutes}
-          //initial Minutes value
-          onChange={(hours, minutes) => {
-            setHours(hours);
-            setMinutes(minutes);
-          }}
-        />
+        <View style={{ flexDirection: 'row', marginStart: 38 }}>
+          <TextInput
+            style={{
+              marginLeft: 38,
+              borderBottomWidth: 1,
+              flex: 1,
+            }}
+            placeholder={'Minutes'}
+            keyboardType={'numeric'}
+            value={String(minutes)}
+            onChangeText={(value) => setMinutes(Number(value))}></TextInput>
+          <TextInput
+            style={{
+              marginLeft: 38,
+              borderBottomWidth: 1,
+              flex: 1,
+            }}
+            placeholder={'Seconds'}
+            keyboardType={'numeric'}
+            value={String(seconds)}
+            onChangeText={(value) => setSeconds(Number(value))}></TextInput>
+        </View>
       </View>
       <View style={{ marginTop: 16 }}>
         <Text style={{ fontWeight: '600', fontSize: 16 }}>
@@ -60,10 +118,10 @@ const AddTimer = (props) => {
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <CheckBox
-            value={saveTimer}
+            value={reusableTimer}
             onValueChange={() => {
               setSingleUseTimer(false);
-              setSaveTimer(true);
+              setReusableTimer(true);
             }}
           />
           <Text style={{ marginLeft: 8 }}>Save</Text>
@@ -73,7 +131,7 @@ const AddTimer = (props) => {
             value={singleUseTimer}
             onValueChange={() => {
               setSingleUseTimer(true);
-              setSaveTimer(false);
+              setReusableTimer(false);
             }}
           />
           <Text style={{ marginLeft: 8 }}>One time</Text>
@@ -82,8 +140,16 @@ const AddTimer = (props) => {
       <TouchableOpacity
         style={{ backgroundColor: 'green', marginTop: 16, borderRadius: 4 }}
         onPress={() => {
-          props.saveTimerData(title, hours, minutes, saveTimer, singleUseTimer);
-          props.saveTimer();
+          saveTimerData(
+            title,
+            Number(hours),
+            Number(minutes),
+            Number(seconds),
+            reusableTimer,
+            singleUseTimer,
+            editData,
+          );
+          resetTimer();
           navigation.navigate('Timers');
         }}>
         <View style={{ marginVertical: 16, alignItems: 'center' }}>
@@ -98,7 +164,7 @@ const AddTimer = (props) => {
 
 AddTimer.propTypes = {
   saveTimerData: PropTypes.func,
-  saveTimers: PropTypes.func,
+  saveTimer: PropTypes.func,
 };
 
 export default AddTimer;
